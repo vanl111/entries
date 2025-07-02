@@ -1,0 +1,2695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>三国智霸</title>
+    <style>
+        body { 
+            font-family: 'SimSun', serif; 
+            background: url('https://img.freepik.com/free-vector/chinese-pattern-background_53876-90035.jpg') center/cover fixed; 
+            margin: 0;
+            padding: 0;
+        }
+        .game-container { 
+            display: grid; 
+            grid-template-columns: 1fr 2fr 1fr; 
+            gap: 20px; 
+            padding: 20px; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background-color: rgba(255,255,255,0.85); 
+            border-radius: 15px; 
+            border: 3px solid #8B4513; 
+        }
+        .panel { 
+            background-color: rgba(255,248,220,0.9); 
+            border-radius: 10px; 
+            padding: 15px;  /* 减少内边距 */
+            border: 2px solid #8B4513; 
+        }
+        .city-node { 
+            position: absolute; 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            background-color: #FFD700; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            border: 2px solid #8B0000; 
+            font-size: 12px;
+        }
+        .city-node-owned { 
+            background-color: #006400; 
+            color: white; 
+            border-color: #000; 
+        }
+        .action-button { 
+            background-color: #8B4513; 
+            color: white; 
+            padding: 6px 12px;  /* 减少行宽 */
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 3px 0;  /* 减少间距 */
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 0.85rem;  /* 减小字体大小 */
+        }
+        .character-selection { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.8); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
+            color: white;
+        }
+        .character-card { 
+            background-color: rgba(255,248,220,0.95); 
+            border-radius: 10px; 
+            padding: 20px; 
+            width: 250px; 
+            text-align: center; 
+            cursor: pointer; 
+            border: 3px solid #8B4513; 
+            transition: transform 0.3s; 
+            color: black;
+            margin: 10px;
+        }
+        .character-card:hover { 
+            transform: scale(1.05); 
+        }
+        .character-card.disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+        }
+        .cover-screen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.9); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 2000; 
+            color: white; 
+        }
+        .cover-title { 
+            font-size: 4rem; 
+            color: #FFD700; 
+            text-shadow: 3px 3px 5px #8B0000; 
+            margin-bottom: 30px; 
+            animation: pulse 2s infinite; 
+        }
+        .start-button { 
+            background-color: #8B0000; 
+            color: white; 
+            padding: 15px 40px; 
+            font-size: 1.5rem; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+        }
+        .start-button:hover { 
+            background-color: #FF0000; 
+            transform: scale(1.1); 
+        }
+        .hint-box { 
+            display: none; 
+            background-color: rgba(70, 130, 180, 0.2); 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin-top: 10px; 
+        }
+        #map { 
+            position: relative; 
+            min-height: 500px; 
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Three_Kingdoms_%28AD_262%29.png/1200px-Three_Kingdoms_%28AD_262%29.png'); 
+            background-size: cover;
+            background-position: center;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .stats-table th, .stats-table td {
+            border: 1px solid #8B4513;
+            padding: 8px;
+            text-align: left;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: rgba(255,248,220,0.95);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 3px solid #8B4513;
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #8B4513;
+        }
+        .music-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: rgba(255,248,220,0.9);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #8B4513;
+        }
+        .event-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .event-content {
+            background-color: rgba(255,248,220,0.95);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 80%;
+            text-align: center;
+            border: 3px solid #8B4513;
+        }
+        .event-title {
+            color: #8B0000;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+        .event-message {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .event-button {
+            background-color: #8B4513;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        .resource-button {
+            background-color: #4682B4;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 3px 0;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 0.85rem;
+        }
+        .victory-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            z-index: 5000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .victory-title {
+            font-size: 4rem;
+            color: #FFD700;
+            text-shadow: 3px 3px 5px #8B0000;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+        .victory-content {
+            max-width: 800px;
+            padding: 20px;
+            background-color: rgba(255,248,220,0.9);
+            border-radius: 10px;
+            color: black;
+            border: 3px solid #8B4513;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1s ease-out;
+        }
+        .city-history-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .city-history-content {
+            background-color: rgba(255,248,220,0.95);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 80%;
+            border: 3px solid #8B4513;
+        }
+        .city-history-title {
+            color: #8B0000;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .city-history-message {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .city-history-button {
+            background-color: #8B4513;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: block;
+            margin: 0 auto;
+        }
+        /* 年份和角色显示样式 */
+        .year-display {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255,248,220,0.9);
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 2px solid #8B4513;
+            font-size: 1.2rem;
+            z-index: 100;
+        }
+        /* 结盟按钮样式 */
+        .alliance-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 3px 0;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 0.85rem;
+        }
+        .alliance-button.disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        /* 结盟模态框样式 */
+        .alliance-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .alliance-content {
+            background-color: rgba(255,248,220,0.95);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 80%;
+            border: 3px solid #8B4513;
+        }
+        .alliance-title {
+            color: #8B0000;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .alliance-message {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .alliance-button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .alliance-confirm-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        .alliance-cancel-button {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        /* 背叛按钮样式 */
+        #betrayBtn {
+            background-color: #f44336;
+            display: none;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        /* 处决选择模态框样式 */
+        .execution-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .execution-content {
+            background-color: rgba(255,248,220,0.95);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 80%;
+            border: 3px solid #8B4513;
+        }
+        .execution-title {
+            color: #8B0000;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .execution-message {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .execution-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .execution-option {
+            background-color: #8B4513;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        /* 对话模态框样式 */
+        .dialogue-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .dialogue-content {
+            background-color: rgba(255,248,220,0.95);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 80%;
+            border: 3px solid #8B4513;
+        }
+        .dialogue-title {
+            color: #8B0000;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .dialogue-message {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            min-height: 100px;
+        }
+        .dialogue-speaker {
+            font-weight: bold;
+            color: #8B0000;
+            margin-bottom: 10px;
+        }
+        .dialogue-button {
+            background-color: #8B4513;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: block;
+            margin: 0 auto;
+        }
+        /* 武将头像样式 */
+        .character-portrait {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid #8B4513;
+            margin: 0 auto 15px;
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- 添加年份和角色显示元素 -->
+    <div class="year-display" id="yearDisplay" style="display: none;">
+        <span id="characterName"></span> | 年份: 184年
+    </div>
+    
+    <!-- 添加音乐控制按钮 -->
+    <div class="music-control" id="musicControl" onclick="toggleMusic()">
+        <span id="musicIcon">🎵</span>
+    </div>
+    
+    <!-- 添加音频元素 -->
+    <audio id="bgMusic" loop>
+        <source src="https://music.163.com/song/media/outer/url?id=5271858.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="cover-screen" id="coverScreen">
+        <h1 class="cover-title">三国智霸</h1>
+        <p style="font-size: 1.5rem; margin-bottom: 30px; max-width: 800px; text-align: center;">
+            通过回答三国历史问题来攻城略地，占领所有14座城池即可统一天下！<br>
+            <span style="color: #FFD700;">新增随机事件系统，体验更丰富的三国争霸！</span>
+        </p>
+        <button class="start-button" onclick="startGame()">开始游戏</button>
+    </div>
+
+    <div class="character-selection" id="characterSelection" style="display: none;">
+        <div style="background-color: rgba(255,248,220,0.9); padding: 20px; border-radius: 10px; max-width: 800px; margin-bottom: 30px; border: 3px solid #8B4513; color: black;">
+            <h1 style="color: #8B0000; text-align: center; font-size: 2.5rem; margin-bottom: 15px;">选择主公</h1>
+            <p id="selectionPrompt">每位主公拥有不同的初始资源，选择一位开始你的争霸之路！</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+            <div class="character-card" id="caoCaoCard" onclick="selectCharacter('曹操')">
+                <h2>曹操</h2>
+                <p>初始资金：6000，粮草：12000，兵力：3500</p>
+                <p style="font-style: italic; color: #8B0000;">"宁教我负天下人，休教天下人负我"</p>
+            </div>
+            <div class="character-card" id="liuBeiCard" onclick="selectCharacter('刘备')">
+                <h2>刘备</h2>
+                <p>初始资金：5000，粮草：20000，兵力：3000</p>
+                <p style="font-style: italic; color: #8B0000;">"勿以恶小而为之，勿以善小而不为"</p>
+            </div>
+            <div class="character-card" id="sunQuanCard" onclick="selectCharacter('孙权')">
+                <h2>孙权</h2>
+                <p>初始资金：5500，粮草：11000，兵力：3200</p>
+                <p style="font-style: italic; color: #8B0000;">"能用众力，则无敌于天下矣"</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="game-container" id="gameContainer" style="display: none;">
+        <div class="panel">
+            <h2>🏯 城池治理</h2>
+            <div style="background-color: rgba(255,255,255,0.9); border-radius: 5px; padding: 10px; margin-bottom: 10px; border: 1px solid #8B4513;">
+                <div>💰 资金：<span id="gold">0</span></div>
+                <div>🌾 粮草：<span id="food">0</span></div>
+                <div>⚔️ 兵力：<span id="troops">0</span></div>
+                <div>🏰 已占领：<span id="citiesCount">0</span>/14</div>
+                <div>✅ 答对：<span id="correctCount">0</span> ❌ 答错：<span id="wrongCount">0</span></div>
+                <div>🌱 农业发展等级：<span id="agriLevel">0</span></div>
+                <div id="allianceStatus" style="display: none;">🤝 结盟中: <span id="alliedCity"></span></div>
+                <div id="reputationDisplay">声望: <span id="reputationValue">50</span>/100</div>
+            </div>
+            <button class="action-button" onclick="game.militaryReform()">军事改革 (消耗2000金)</button>
+            <button class="action-button" onclick="game.agriculturalDevelopment()">农业发展 (消耗1500金)</button>
+            <button class="action-button" onclick="game.showHint()" style="background-color: #4682B4;">提示</button>
+            <button class="action-button" onclick="game.openShop()" style="background-color: #8B008B;">商城</button>
+            <button class="action-button" onclick="game.showStats()" style="background-color: #556B2F;">答题统计</button>
+            <button class="alliance-button" id="allianceBtn" onclick="game.startAlliance()">结盟</button>
+            <button class="alliance-button" id="betrayBtn" onclick="game.betrayAlliance()" style="background-color: #f44336; display: none;">背叛</button>
+            <button class="resource-button" onclick="game.earnResourcesByAnswering()" id="earnResourceBtn" style="display: none;">答题获取资源</button>
+            <button class="action-button" onclick="returnToCharacterSelection()" style="background-color: #FF6347;">返回角色选择</button>
+        </div>
+        
+        <div class="panel" id="map"></div>
+        
+        <div class="panel">
+            <h2>⚔️ 攻城略地</h2>
+            <div id="questionBox" style="background-color: rgba(255,255,255,0.9); border-radius: 5px; padding: 15px; margin-bottom: 10px; border: 1px solid #8B4513;">
+                <p>点击地图上的城池开始攻城！</p>
+            </div>
+            <div id="progressBox" style="display: none;">
+                <p>攻城进度: <span id="correctAnswers">0</span>/<span id="requiredAnswers">2</span></p>
+            </div>
+            <div id="hintBox" class="hint-box">
+                <h3>💡 提示</h3>
+                <p id="hintText"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 商城模态框 -->
+    <div class="modal" id="shopModal">
+        <div class="modal-content">
+            <span class="close-button" onclick="game.closeShop()">&times;</span>
+            <h2 style="color: #8B0000; text-align: center; margin-bottom: 20px;">商城</h2>
+            <div class="panel">
+                <div class="shop-item">
+                    <div>
+                        <h3>兵力补充包</h3>
+                        <p>立即增加1000兵力</p>
+                    </div>
+                    <button class="action-button" onclick="game.buyItem('troops')">购买 (3000金)</button>
+                </div>
+                <div class="shop-item">
+                    <div>
+                        <h3>粮草补充包</h3>
+                        <p>立即增加5000粮草</p>
+                    </div>
+                    <button class="action-button" onclick="game.buyItem('food')">购买 (2000金)</button>
+                </div>
+                <div class="shop-item">
+                    <div>
+                        <h3>免答卡</h3>
+                        <p>攻城时可免答一题</p>
+                    </div>
+                    <button class="action-button" onclick="game.buyItem('freeAnswer')">购买 (2500金)</button>
+                </div>
+                <div class="shop-item">
+                    <div>
+                        <h3>双倍奖励卡</h3>
+                        <p>下次攻城成功获得双倍奖励</p>
+                    </div>
+                    <button class="action-button" onclick="game.buyItem('doubleReward')">购买 (4000金)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 答题统计模态框 -->
+    <div class="modal" id="statsModal">
+        <div class="modal-content">
+            <span class="close-button" onclick="game.closeStats()">&times;</span>
+            <h2 style="color: #8B0000; text-align: center; margin-bottom: 20px;">答题统计</h2>
+            <div class="panel">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>题目</th>
+                            <th>你的答案</th>
+                            <th>正确答案</th>
+                            <th>结果</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statsTableBody">
+                        <!-- 答题记录将在这里动态生成 -->
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; font-weight: bold;">
+                    <p>总答题数: <span id="totalQuestions">0</span></p>
+                    <p>正确率: <span id="accuracyRate">0</span>%</p>
+                    <p>连续答对最高记录: <span id="maxStreak">0</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 随机事件模态框 -->
+    <div class="event-modal" id="eventModal">
+        <div class="event-content">
+            <h2 class="event-title" id="eventTitle">随机事件</h2>
+            <p class="event-message" id="eventMessage"></p>
+            <button class="event-button" onclick="game.closeEvent()">确定</button>
+        </div>
+    </div>
+
+    <!-- 资源获取模态框 -->
+    <div class="modal" id="resourceModal">
+        <div class="modal-content">
+            <span class="close-button" onclick="game.closeResourceModal()">&times;</span>
+            <h2 style="color: #8B0000; text-align: center; margin-bottom: 20px;">答题获取资源</h2>
+            <div class="panel">
+                <div id="resourceQuestionBox"></div>
+                <div id="resourceProgressBox" style="display: none;">
+                    <p>答题进度: <span id="resourceCorrectAnswers">0</span>/<span id="resourceRequiredAnswers">3</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 城池历史模态框 -->
+    <div class="city-history-modal" id="cityHistoryModal">
+        <div class="city-history-content">
+            <h2 class="city-history-title" id="cityHistoryTitle">城池历史</h2>
+            <p class="city-history-message" id="cityHistoryMessage"></p>
+            <button class="city-history-button" onclick="game.closeCityHistory()">确定</button>
+        </div>
+    </div>
+
+    <!-- 胜利动画 -->
+    <div class="victory-animation" id="victoryAnimation" style="display: none;">
+        <h1 class="victory-title">统一天下</h1>
+        <div class="victory-content" id="victoryContent">
+            <!-- 内容将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <!-- 结盟模态框 -->
+    <div class="alliance-modal" id="allianceModal">
+        <div class="alliance-content">
+            <h2 class="alliance-title">选择结盟城池</h2>
+            <p class="alliance-message">请选择一个未被占领的城池进行结盟，有50%的几率成功。结盟成功后，每攻占2座城池可获得资源和兵力奖励。</p>
+            <div id="allianceCityList" style="margin-bottom: 20px;">
+                <!-- 城池列表将在这里动态生成 -->
+            </div>
+            <div class="alliance-button-group">
+                <button class="alliance-confirm-button" id="confirmAllianceBtn">确认结盟</button>
+                <button class="alliance-cancel-button" onclick="game.closeAllianceModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 处决选择模态框 -->
+    <div class="execution-modal" id="executionModal">
+        <div class="execution-content">
+            <h2 class="execution-title" id="executionTitle">处置守将</h2>
+            <p class="execution-message" id="executionMessage">你已攻下城池，如何处置守将？</p>
+            <div class="execution-options" id="executionOptions">
+                <!-- 选项将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 对话模态框 -->
+    <div class="dialogue-modal" id="dialogueModal">
+        <div class="dialogue-content">
+            <div class="character-portrait" id="dialoguePortrait"></div>
+            <h2 class="dialogue-title" id="dialogueTitle">对话</h2>
+            <div class="dialogue-speaker" id="dialogueSpeaker"></div>
+            <p class="dialogue-message" id="dialogueMessage"></p>
+            <button class="dialogue-button" onclick="game.nextDialogue()" id="dialogueNextBtn">继续</button>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量，记录已选角色
+        const selectedCharacters = new Set();
+        
+        // 城池历史信息 - 添加现代位置信息
+        const CITY_HISTORIES = {
+            '洛阳': '洛阳是东汉的都城，也是三国时期的重要政治中心。公元190年，董卓挟持汉献帝迁都长安，火烧洛阳，使这座千年古都化为废墟。后来曹操迎汉献帝迁都许昌，洛阳逐渐恢复。\n\n现代位置：今河南省洛阳市',
+            '成都': '成都是蜀汉的首都，刘备于公元221年在此称帝。诸葛亮在此推行屯田政策，发展农业，使成都成为西南地区的经济文化中心。成都也是蜀锦的发源地，经济繁荣。\n\n现代位置：今四川省成都市',
+            '许昌': '许昌是曹操的政治中心，公元196年曹操迎汉献帝迁都于此，开始了"挟天子以令诸侯"的时代。许昌成为北方的政治、军事中心，曹操在此推行屯田制，发展经济。\n\n现代位置：今河南省许昌市',
+            '建业': '建业(今南京)是东吴的首都，孙权于公元229年在此称帝。建业位于长江下游，水运便利，是东吴的政治、经济中心。孙权在此修建石头城，加强防御。\n\n现代位置：今江苏省南京市',
+            '长安': '长安是西汉的都城，董卓挟持汉献帝迁都于此。后来成为西晋的都城。长安地处关中平原，易守难攻，是西北地区的政治、经济中心。\n\n现代位置：今陕西省西安市',
+            '荆州': '荆州地处长江中游，是三国时期的战略要地。赤壁之战后，荆州被魏、蜀、吴三方争夺，关羽曾镇守荆州，后被吕蒙偷袭失去。\n\n现代位置：今湖北省荆州市',
+            '徐州': '徐州地处中原东部，是连接南北的交通要道。陶谦曾任徐州牧，后让位于刘备。曹操为报父仇曾攻打徐州，造成大规模屠杀。\n\n现代位置：今江苏省徐州市',
+            '襄阳': '襄阳是荆州北部重镇，刘表曾在此治理荆州。诸葛亮曾在此隐居，后刘备三顾茅庐请其出山。襄阳也是南北交通要道，战略地位重要。\n\n现代位置：今湖北省襄阳市',
+            '宛城': '宛城是南阳郡治所，张绣曾在此割据。曹操征讨张绣时，因强占张绣婶婶邹氏，引发张绣反叛，导致曹操长子曹昂、大将典韦战死。\n\n现代位置：今河南省南阳市',
+            '南郡': '南郡是荆州的重要郡县，曹仁曾镇守于此。周瑜曾率军攻打南郡，与曹仁激战一年有余，最终夺取南郡，但自己也中箭受伤。\n\n现代位置：今湖北省荆州市江陵县',
+            '汉中': '汉中是益州北部重镇，张鲁在此创立五斗米道。曹操攻占汉中后，刘备与曹操展开汉中之战，最终刘备获胜，自称汉中王。\n\n现代位置：今陕西省汉中市',
+            '江夏': '江夏位于长江中游，是荆州东部重镇。黄祖曾镇守江夏，后被孙权部将甘宁射杀。赤壁之战后，江夏成为吴蜀争夺的要地。\n\n现代位置：今湖北省武汉市江夏区',
+            '合肥': '合肥是淮南重镇，曹操派张辽镇守。公元215年，孙权率十万大军攻打合肥，被张辽以八百精兵击退，史称"逍遥津之战"。\n\n现代位置：今安徽省合肥市',
+            '邺城': '邺城是河北重镇，袁绍的大本营。官渡之战后，曹操攻占邺城，后成为曹魏的陪都。曹丕称帝后，邺城仍是北方重要城市。\n\n现代位置：今河北省临漳县'
+        };
+
+        // 主公生平信息
+        const CHARACTER_HISTORIES = {
+            '曹操': '曹操(155年-220年)，字孟德，沛国谯县(今安徽亳州)人。东汉末年杰出的政治家、军事家、文学家、书法家，三国中曹魏政权的奠基人。\n\n' +
+                   '曹操年轻时举孝廉入仕，后参与镇压黄巾起义。董卓乱政时，曹操散家财起兵讨伐。公元196年迎汉献帝迁都许昌，挟天子以令诸侯。\n\n' +
+                   '曹操先后击败吕布、袁术、袁绍等割据势力，统一了中国北方。实行屯田制，恢复经济；唯才是举，打破世族垄断；精于兵法，著有《孙子略解》。\n\n' +
+                   '曹操一生未称帝，220年病逝于洛阳，其子曹丕称帝后追尊为魏武帝。曹操在文学上也有很高成就，与其子曹丕、曹植并称"三曹"。',
+            '刘备': '刘备(161年-223年)，字玄德，涿郡涿县(今河北涿州)人。西汉中山靖王刘胜之后，三国时期蜀汉开国皇帝。\n\n' +
+                   '刘备早年以贩履织席为业，后与关羽、张飞桃园结义，参与镇压黄巾起义。先后依附公孙瓒、陶谦、曹操、袁绍、刘表等。\n\n' +
+                   '三顾茅庐请诸葛亮出山后，联合孙权在赤壁之战击败曹操，占据荆州。后入蜀夺取益州，219年自称汉中王。221年在成都称帝，国号汉，史称蜀汉。\n\n' +
+                   '222年，刘备为报关羽之仇，发动夷陵之战，被陆逊火烧连营，大败而归。223年病逝于白帝城，托孤于诸葛亮。谥号昭烈皇帝。',
+            '孙权': '孙权(182年-252年)，字仲谋，吴郡富春(今浙江富阳)人。三国时期东吴开国皇帝，孙坚次子，孙策之弟。\n\n' +
+                   '200年孙策遇刺身亡，18岁的孙权继位。在周瑜、张昭等人辅佐下稳定江东。208年联合刘备在赤壁之战击败曹操，奠定三国鼎立基础。\n\n' +
+                   '222年称吴王，229年正式称帝，国号吴，定都建业(今南京)。在位期间，开发江南，发展海上贸易；派卫温、诸葛直航海至夷洲(今台湾)。\n\n' +
+                   '孙权晚年多疑，引发二宫之争，导致许多大臣被杀或流放。252年病逝，享年70岁，谥号大皇帝，庙号太祖。'
+        };
+
+        // 武将对话信息
+        const GENERAL_DIALOGUES = {
+            '董卓': [
+                { speaker: '董卓', message: '哈哈哈！我董卓手握重兵，朝廷上下谁敢不从？' },
+                { speaker: '董卓', message: '你这小儿也敢来犯我洛阳？看我如何收拾你！' },
+                { speaker: '董卓', message: '吕布！我儿何在？快替我杀了这厮！' }
+            ],
+            '刘璋': [
+                { speaker: '刘璋', message: '我益州天府之国，兵精粮足，岂是你能轻易攻下的？' },
+                { speaker: '刘璋', message: '张任、严颜，速速布防，绝不能让敌军攻入成都！' },
+                { speaker: '刘璋', message: '唉...我本仁慈之主，奈何天下大乱...' }
+            ],
+            '张济': [
+                { speaker: '张济', message: '许昌乃曹操重地，岂容你等轻易攻取？' },
+                { speaker: '张济', message: '我侄张绣勇猛过人，定能守住此城！' },
+                { speaker: '张济', message: '若你肯退兵，我可考虑与你结盟...' }
+            ],
+            '刘繇': [
+                { speaker: '刘繇', message: '江东之地，水网密布，你北方之兵岂能适应？' },
+                { speaker: '刘繇', message: '太史慈何在？速速迎敌！' },
+                { speaker: '刘繇', message: '孙策小儿已占据江东大部，如今你又来犯...' }
+            ],
+            '李傕': [
+                { speaker: '李傕', message: '长安乃帝都所在，岂是你等能觊觎的？' },
+                { speaker: '李傕', message: '郭汜！速速调兵，与我一同御敌！' },
+                { speaker: '李傕', message: '当年我与郭汜联手，连吕布都奈何不得我们！' }
+            ],
+            '刘表': [
+                { speaker: '刘表', message: '荆州八郡，带甲十万，你区区兵力也敢来犯？' },
+                { speaker: '刘表', message: '蒯越、蔡瑁，速速商议对策！' },
+                { speaker: '刘表', message: '我本汉室宗亲，只求保境安民...' }
+            ],
+            '陶谦': [
+                { speaker: '陶谦', message: '徐州百姓安居乐业，为何要兴兵来犯？' },
+                { speaker: '陶谦', message: '曹操为报父仇，曾屠我徐州百姓...' },
+                { speaker: '陶谦', message: '若能让徐州百姓免于战火，我愿让出徐州...' }
+            ],
+            '蔡瑁': [
+                { speaker: '蔡瑁', message: '襄阳城高池深，你如何攻得下？' },
+                { speaker: '蔡瑁', message: '我蔡氏家族在荆州根深蒂固，岂是你能撼动的？' },
+                { speaker: '蔡瑁', message: '刘表年老，荆州迟早是我蔡家的...' }
+            ],
+            '张绣': [
+                { speaker: '张绣', message: '宛城虽小，却是我张绣立足之地！' },
+                { speaker: '张绣', message: '贾诩先生，如今敌军来犯，该如何是好？' },
+                { speaker: '张绣', message: '曹操曾害我叔父，此仇不共戴天！' }
+            ],
+            '曹仁': [
+                { speaker: '曹仁', message: '我乃曹魏大将曹仁，奉命镇守南郡！' },
+                { speaker: '曹仁', message: '周瑜曾在此与我激战一年有余...' },
+                { speaker: '曹仁', message: '南郡乃战略要地，绝不能失！' }
+            ],
+            '张鲁': [
+                { speaker: '张鲁', message: '我五斗米道以仁义治民，汉中百姓安居乐业。' },
+                { speaker: '张鲁', message: '曹操曾来攻汉中，被我军击退...' },
+                { speaker: '张鲁', message: '若你能善待我教众，我可考虑归顺...' }
+            ],
+            '黄祖': [
+                { speaker: '黄祖', message: '江夏乃荆州门户，岂容你等轻易攻取？' },
+                { speaker: '黄祖', message: '甘宁那叛贼曾射杀我部将...' },
+                { speaker: '黄祖', message: '刘表待我不薄，我誓死守住江夏！' }
+            ],
+            '张辽': [
+                { speaker: '张辽', message: '我张文远在此，谁敢犯我合肥？' },
+                { speaker: '张辽', message: '逍遥津一战，我以八百破十万！' },
+                { speaker: '张辽', message: '合肥乃曹魏东南屏障，绝不能失！' }
+            ],
+            '袁绍': [
+                { speaker: '袁绍', message: '我袁本初四世三公，门生故吏遍天下！' },
+                { speaker: '袁绍', message: '颜良、文丑，速速迎敌！' },
+                { speaker: '袁绍', message: '官渡一战...唉...不提也罢...' }
+            ]
+        };
+
+        // 历史事件配置 - 修改为根据不同主公有不同的影响
+        const HISTORICAL_EVENTS = {
+            184: { 
+                title: "黄巾起义", 
+                message: "张角发动黄巾起义，天下大乱！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops += 1000; // 曹操参与镇压黄巾军，获得兵力
+                        effectMsg = "你参与镇压黄巾军，获得1000兵力！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops += 800; // 刘备也参与镇压，但不如曹操
+                        effectMsg = "你参与镇压黄巾军，获得800兵力！";
+                    } else {
+                        game.state.food -= 2000; // 孙权当时年幼，领地受影响
+                        effectMsg = "黄巾军活动影响你的领地，损失2000粮草！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            190: { 
+                title: "董卓乱政", 
+                message: "董卓废少帝，立献帝，把持朝政！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.gold += 1500; // 曹操散家财起兵讨董
+                        effectMsg = "你散家财起兵讨董，获得1500金！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops += 500; // 刘备参与讨董
+                        effectMsg = "你参与讨伐董卓，获得500兵力！";
+                    } else {
+                        // 孙权当时年幼，不受影响
+                        effectMsg = "你年纪尚小，未参与讨董。";
+                    }
+                    return effectMsg;
+                } 
+            },
+            200: { 
+                title: "官渡之战", 
+                message: "曹操与袁绍在官渡展开决战！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops += 2000; // 曹操大胜
+                        game.state.gold += 3000;
+                        effectMsg = "你大败袁绍，获得2000兵力和3000金！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops -= 500; // 刘备依附袁绍，受影响
+                        effectMsg = "你依附袁绍，受官渡之战影响，损失500兵力！";
+                    } else {
+                        // 孙权趁机发展
+                        game.state.food += 2000;
+                        effectMsg = "你趁机发展江东，获得2000粮草！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            208: { 
+                title: "赤壁之战", 
+                message: "孙刘联军在赤壁大败曹操！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops = Math.floor(game.state.troops * 0.7); // 曹操大败
+                        effectMsg = "你在赤壁大败，损失30%兵力！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops += 1500; // 刘备获利
+                        game.state.gold += 2000;
+                        effectMsg = "你与孙权联合大败曹操，获得1500兵力和2000金！";
+                    } else {
+                        game.state.troops += 2000; // 孙权获利最多
+                        game.state.gold += 3000;
+                        effectMsg = "你与刘备联合大败曹操，获得2000兵力和3000金！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            220: { 
+                title: "曹丕称帝", 
+                message: "曹丕逼迫汉献帝禅位，建立魏国！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        // 曹操已去世，游戏中的继承者
+                        game.state.troops += 2500;
+                        game.state.gold += 4000;
+                        effectMsg = "你的继承者曹丕称帝，获得2500兵力和4000金！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops += 1000; // 刘备准备称帝
+                        effectMsg = "曹丕篡汉，你准备称帝，获得1000兵力！";
+                    } else {
+                        game.state.food += 3000; // 孙权观望
+                        effectMsg = "曹丕称帝，你暂时观望，获得3000粮草！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            221: { 
+                title: "刘备称帝", 
+                message: "刘备在成都称帝，建立蜀汉！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops += 1000; // 魏国加强防御
+                        effectMsg = "刘备称帝，你加强防御，获得1000兵力！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops += 2000;
+                        game.state.gold += 3000;
+                        effectMsg = "你称帝建立蜀汉，获得2000兵力和3000金！";
+                    } else {
+                        game.state.troops += 1500; // 孙权警惕
+                        effectMsg = "刘备称帝，你加强军备，获得1500兵力！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            229: { 
+                title: "孙权称帝", 
+                message: "孙权在建业称帝，建立东吴！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops += 1000; // 魏国加强防御
+                        effectMsg = "孙权称帝，你加强防御，获得1000兵力！";
+                    } else if (game.character === '刘备') {
+                        // 刘备已去世，游戏中的继承者
+                        game.state.food += 2000;
+                        effectMsg = "孙权称帝，你加强粮草储备，获得2000粮草！";
+                    } else {
+                        game.state.troops += 2500;
+                        game.state.gold += 4000;
+                        effectMsg = "你称帝建立东吴，获得2500兵力和4000金！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            234: { 
+                title: "诸葛亮病逝", 
+                message: "蜀汉丞相诸葛亮病逝于五丈原！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops += 1500; // 魏国压力减轻
+                        effectMsg = "诸葛亮病逝，蜀汉威胁减轻，获得1500兵力！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops = Math.floor(game.state.troops * 0.9); // 蜀国士气低落
+                        effectMsg = "诸葛亮病逝，蜀汉士气低落，损失10%兵力！";
+                    } else {
+                        game.state.food += 2000; // 孙权趁机发展
+                        effectMsg = "诸葛亮病逝，你趁机发展，获得2000粮草！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            249: { 
+                title: "高平陵之变", 
+                message: "司马懿发动政变，控制曹魏政权！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops = Math.floor(game.state.troops * 0.8); // 魏国内乱
+                        effectMsg = "司马懿发动政变，魏国内乱，损失20%兵力！";
+                    } else if (game.character === '刘备') {
+                        game.state.troops += 1000; // 蜀国可能有机会
+                        effectMsg = "魏国内乱，你加强军备，获得1000兵力！";
+                    } else {
+                        game.state.troops += 1500; // 吴国加强防御
+                        effectMsg = "魏国内乱，你加强防御，获得1500兵力！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            263: { 
+                title: "蜀汉灭亡", 
+                message: "邓艾偷渡阴平，蜀汉灭亡！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        game.state.troops += 3000; // 魏国灭蜀
+                        game.state.gold += 5000;
+                        effectMsg = "你的继承者灭蜀，获得3000兵力和5000金！";
+                    } else if (game.character === '刘备') {
+                        // 游戏结束
+                        game.state.troops = 0;
+                        effectMsg = "你的国家灭亡了！";
+                        setTimeout(() => {
+                            alert("蜀汉灭亡，游戏结束！");
+                            game.returnToCharacterSelection();
+                        }, 3000);
+                    } else {
+                        game.state.troops += 2000; // 吴国面临更大压力
+                        effectMsg = "蜀汉灭亡，你加强防御，获得2000兵力！";
+                    }
+                    return effectMsg;
+                } 
+            },
+            280: { 
+                title: "三国归晋", 
+                message: "晋灭东吴，三国时代结束！", 
+                effect: (game) => {
+                    let effectMsg = "";
+                    if (game.character === '曹操') {
+                        // 魏国已被晋取代
+                        effectMsg = "三国归晋，魏国已被晋取代！";
+                    } else if (game.character === '刘备') {
+                        // 蜀汉已灭亡
+                        effectMsg = "三国归晋，蜀汉早已灭亡！";
+                    } else {
+                        // 吴国灭亡
+                        effectMsg = "三国归晋，东吴灭亡！";
+                        setTimeout(() => {
+                            alert("东吴灭亡，游戏结束！");
+                            game.returnToCharacterSelection();
+                        }, 3000);
+                    }
+                    return effectMsg;
+                } 
+            }
+        };
+
+        // 问题库配置 - 增加到40题
+        const QUESTIONS = [
+            { 
+                q: "官渡之战的主要交战双方是？", 
+                o: ["曹操vs袁绍", "刘备vs孙权", "曹操vs刘备"], 
+                a: 0,
+                hint: "这场战役发生在公元200年，是北方两大势力的决战。"
+            },
+            { 
+                q: "诸葛亮的字是什么？", 
+                o: ["孔明", "仲达", "公瑾"], 
+                a: 0,
+                hint: "他的字与'卧龙'的称号相呼应，意为'明亮的孔洞'。"
+            },
+            { 
+                q: "桃园三结义的三个人是？", 
+                o: ["刘备、关羽、张飞", "曹操、孙权、刘备", "吕布、貂蝉、董卓"], 
+                a: 0,
+                hint: "这三人在桃园结为异姓兄弟，誓同生死。"
+            },
+            { 
+                q: "赤壁之战发生在哪个江？", 
+                o: ["长江", "黄河", "淮河"], 
+                a: 0,
+                hint: "这是中国最长的河流，也是南北分界线。"
+            },
+            { 
+                q: "孙权是哪个国家的主公？", 
+                o: ["吴国", "魏国", "蜀国"], 
+                a: 0,
+                hint: "这个国家位于东南沿海，以水军著称。"
+            },
+            { 
+                q: "被称为小霸王的是谁？", 
+                o: ["孙策", "孙坚", "周瑜"], 
+                a: 0,
+                hint: "他是孙权的兄长，勇猛善战，奠定了吴国的基础。"
+            },
+            { 
+                q: "关羽过五关斩的第一将是谁？", 
+                o: ["孔秀", "韩福", "孟坦"], 
+                a: 0,
+                hint: "这位将领镇守东岭关，是关羽北上的第一道关卡。"
+            },
+            { 
+                q: "以下谁是刘禅的乳名？", 
+                o: ["阿斗", "伯约", "奉孝"], 
+                a: 0,
+                hint: "这个乳名因'扶不起的...'而闻名。"
+            },
+            { 
+                q: "哪个国家是由曹丕建立的？", 
+                o: ["魏国", "蜀国", "吴国"], 
+                a: 0,
+                hint: "这个国家位于北方，以洛阳为都城。"
+            },
+            { 
+                q: "刘备三顾茅庐请的是谁？", 
+                o: ["诸葛亮", "庞统", "徐庶"], 
+                a: 0,
+                hint: "这位谋士后来成为蜀汉的丞相，被誉为'卧龙'。"
+            },
+            { 
+                q: "三国时期著名的'七擒孟获'是谁的功绩？", 
+                o: ["诸葛亮", "关羽", "赵云"], 
+                a: 0,
+                hint: "这位蜀汉丞相以智慧和谋略闻名。"
+            },
+            { 
+                q: "谁被称为'美髯公'？", 
+                o: ["关羽", "张飞", "吕布"], 
+                a: 0,
+                hint: "这位武将有一把漂亮的长须。"
+            },
+            { 
+                q: "谁在长坂坡单骑救阿斗？", 
+                o: ["赵云", "关羽", "张飞"], 
+                a: 0,
+                hint: "这位武将以勇猛和忠诚著称。"
+            },
+            { 
+                q: "谁提出了'三分天下'的战略？", 
+                o: ["诸葛亮", "周瑜", "司马懿"], 
+                a: 0,
+                hint: "这位谋士在隆中对中提出了这一战略。"
+            },
+            { 
+                q: "谁在赤壁之战中使用了火攻？", 
+                o: ["周瑜", "诸葛亮", "曹操"], 
+                a: 0,
+                hint: "这位吴国都督是赤壁之战的主要指挥官。"
+            },
+            { 
+                q: "谁被称为'凤雏'？", 
+                o: ["庞统", "诸葛亮", "徐庶"], 
+                a: 0,
+                hint: "这位谋士与'卧龙'齐名。"
+            },
+            { 
+                q: "谁在定军山斩杀了夏侯渊？", 
+                o: ["黄忠", "关羽", "张飞"], 
+                a: 0,
+                hint: "这位老将在此战中表现出色。"
+            },
+            { 
+                q: "谁在合肥之战中以八百破十万？", 
+                o: ["张辽", "许褚", "典韦"], 
+                a: 0,
+                hint: "这位魏国将领以勇猛著称。"
+            },
+            { 
+                q: "谁在夷陵之战中大败刘备？", 
+                o: ["陆逊", "周瑜", "吕蒙"], 
+                a: 0,
+                hint: "这位吴国将领使用了火攻战术。"
+            },
+            { 
+                q: "谁在麦城被擒后遇害？", 
+                o: ["关羽", "张飞", "赵云"], 
+                a: 0,
+                hint: "这位蜀汉名将被东吴擒获。"
+            },
+            { 
+                q: "谁在街亭之战中因失守而被诸葛亮斩首？", 
+                o: ["马谡", "魏延", "姜维"], 
+                a: 0,
+                hint: "这位将领违背了诸葛亮的部署。"
+            },
+            { 
+                q: "谁在五丈原病逝？", 
+                o: ["诸葛亮", "司马懿", "曹操"], 
+                a: 0,
+                hint: "这位蜀汉丞相北伐时在此去世。"
+            },
+            { 
+                q: "谁在曹操面前'煮酒论英雄'？", 
+                o: ["刘备", "关羽", "张飞"], 
+                a: 0,
+                hint: "这位蜀汉开国皇帝当时寄人篱下。"
+            },
+            { 
+                q: "谁在长坂桥喝退曹军？", 
+                o: ["张飞", "关羽", "赵云"], 
+                a: 0,
+                hint: "这位武将以勇猛和嗓门大著称。"
+            },
+            { 
+                q: "谁在曹操军中被称为'虎痴'？", 
+                o: ["许褚", "典韦", "张辽"], 
+                a: 0,
+                hint: "这位武将力大无比，忠心护主。"
+            },
+            { 
+                q: "谁在宛城之战中为保护曹操而战死？", 
+                o: ["典韦", "许褚", "夏侯惇"], 
+                a: 0,
+                hint: "这位武将手持双戟，勇猛无比。"
+            },
+            { 
+                q: "谁在曹操面前'割发代首'？", 
+                o: ["曹操", "刘备", "孙权"], 
+                a: 0,
+                hint: "这位君主为了严明军纪而惩罚自己。"
+            },
+            { 
+                q: "谁在曹操军中被称为'古之恶来'？", 
+                o: ["典韦", "许褚", "夏侯惇"], 
+                a: 0,
+                hint: "这位武将力大无比，忠心护主。"
+            },
+            { 
+                q: "谁在曹操面前'望梅止渴'？", 
+                o: ["曹操", "刘备", "孙权"], 
+                a: 0,
+                hint: "这位君主用计谋激励士兵前进。"
+            },
+            { 
+                q: "谁在曹操面前'挟天子以令诸侯'？", 
+                o: ["曹操", "刘备", "袁绍"], 
+                a: 0,
+                hint: "这位君主控制了汉献帝。"
+            },
+            { 
+                q: "谁在曹操面前'宁教我负天下人，休教天下人负我'？", 
+                o: ["曹操", "刘备", "孙权"], 
+                a: 0,
+                hint: "这句话体现了这位君主的性格。"
+            },
+            { 
+                q: "谁在曹操面前'治世之能臣，乱世之奸雄'？", 
+                o: ["曹操", "刘备", "袁绍"], 
+                a: 0,
+                hint: "这是许劭对这位君主的评价。"
+            },
+            { 
+                q: "谁在刘备面前'勿以恶小而为之，勿以善小而不为'？", 
+                o: ["刘备", "曹操", "孙权"], 
+                a: 0,
+                hint: "这是这位君主临终前对儿子的教诲。"
+            },
+            { 
+                q: "谁在刘备面前'兄弟如手足，妻子如衣服'？", 
+                o: ["刘备", "关羽", "张飞"], 
+                a: 0,
+                hint: "这句话体现了这位君主对兄弟情的重视。"
+            },
+            { 
+                q: "谁在孙权面前'生子当如孙仲谋'？", 
+                o: ["曹操", "刘备", "袁绍"], 
+                a: 0,
+                hint: "这是这位君主对孙权的评价。"
+            },
+            { 
+                q: "谁在孙权面前'能用众力，则无敌于天下矣'？", 
+                o: ["孙权", "曹操", "刘备"], 
+                a: 0,
+                hint: "这句话体现了这位君主的用人理念。"
+            },
+            { 
+                q: "谁在孙权面前'士别三日，当刮目相待'？", 
+                o: ["吕蒙", "陆逊", "周瑜"], 
+                a: 0,
+                hint: "这位将领通过学习改变了鲁肃的看法。"
+            },
+            { 
+                q: "谁在孙权面前'白衣渡江'偷袭荆州？", 
+                o: ["吕蒙", "陆逊", "周瑜"], 
+                a: 0,
+                hint: "这位将领伪装成商人成功偷袭。"
+            },
+            { 
+                q: "谁在孙权面前'火烧连营'击败刘备？", 
+                o: ["陆逊", "周瑜", "吕蒙"], 
+                a: 0,
+                hint: "这位将领在夷陵之战中使用了火攻。"
+            },
+            { 
+                q: "谁在孙权面前'既生瑜，何生亮'？", 
+                o: ["周瑜", "吕蒙", "陆逊"], 
+                a: 0,
+                hint: "这位吴国都督临终前的感叹。"
+            }
+        ];
+
+        // 城池配置 - 增加到14座城池
+        const CITIES = [
+            { name: '洛阳', x: 55, y: 35, defender: '董卓', troops: 4000 },   // 中原地区
+            { name: '成都', x: 20, y: 70, defender: '刘璋', troops: 3500 },   // 西南蜀地
+            { name: '许昌', x: 60, y: 40, defender: '张济', troops: 3800 },   // 中原地区
+            { name: '建业', x: 75, y: 30, defender: '刘繇', troops: 3700 },   // 东南吴地
+            { name: '长安', x: 35, y: 45, defender: '李傕', troops: 4200 },   // 西北地区
+            { name: '荆州', x: 50, y: 55, defender: '刘表', troops: 3600 },   // 长江中游
+            { name: '徐州', x: 65, y: 40, defender: '陶谦', troops: 3400 },   // 东部地区
+            { name: '襄阳', x: 45, y: 50, defender: '蔡瑁', troops: 3900 },   // 荆州北部
+            { name: '宛城', x: 50, y: 40, defender: '张绣', troops: 3300 },   // 南阳地区
+            { name: '南郡', x: 45, y: 60, defender: '曹仁', troops: 4100 },    // 荆州南部
+            { name: '汉中', x: 30, y: 50, defender: '张鲁', troops: 3800 },    // 新增城池
+            { name: '江夏', x: 55, y: 60, defender: '黄祖', troops: 3500 },    // 新增城池
+            { name: '合肥', x: 70, y: 45, defender: '张辽', troops: 4200 },    // 新增城池
+            { name: '邺城', x: 60, y: 30, defender: '袁绍', troops: 4500 }     // 新增城池
+        ];
+
+        // 随机事件配置
+        const RANDOM_EVENTS = [
+            // 正面事件
+            {
+                title: "丰收之年",
+                message: "今年风调雨顺，农田大丰收！",
+                effect: (game) => {
+                    const bonus = Math.floor(Math.random() * 3000) + 2000;
+                    game.state.food += bonus;
+                    return `获得${bonus}粮草！`;
+                },
+                probability: 0.15
+            },
+            {
+                title: "发现宝藏",
+                message: "在你的领地内发现了一处隐藏的宝藏！",
+                effect: (game) => {
+                    const bonus = Math.floor(Math.random() * 2000) + 1000;
+                    game.state.gold += bonus;
+                    return `获得${bonus}金！`;
+                },
+                probability: 0.1
+            },
+            {
+                title: "名将来投",
+                message: "一位著名将领仰慕你的威名，率部来投！",
+                effect: (game) => {
+                    const bonus = Math.floor(Math.random() * 800) + 500;
+                    game.state.troops += bonus;
+                    return `获得${bonus}兵力！`;
+                },
+                probability: 0.1
+            },
+            {
+                title: "商队贸易",
+                message: "一支大型商队来到你的城池进行贸易，带来了丰厚利润！",
+                effect: (game) => {
+                    const goldBonus = Math.floor(Math.random() * 1500) + 1000;
+                    const foodBonus = Math.floor(Math.random() * 2000) + 1000;
+                    game.state.gold += goldBonus;
+                    game.state.food += foodBonus;
+                    return `获得${goldBonus}金和${foodBonus}粮草！`;
+                },
+                probability: 0.1
+            },
+            {
+                title: "民心所向",
+                message: "你的仁政深得民心，百姓踊跃参军！",
+                effect: (game) => {
+                    const troopsBonus = Math.floor(Math.random() * 1000) + 500;
+                    game.state.troops += troopsBonus;
+                    return `获得${troopsBonus}兵力！`;
+                },
+                probability: 0.08
+            },
+            // 负面事件
+            {
+                title: "蝗灾肆虐",
+                message: "可怕的蝗灾席卷了你的领地！",
+                effect: (game) => {
+                    const loss = Math.floor(Math.random() * 3000) + 2000;
+                    game.state.food = Math.max(0, game.state.food - loss);
+                    return `损失${loss}粮草！`;
+                },
+                probability: 0.1
+            },
+            {
+                title: "敌军偷袭",
+                message: "敌军趁夜偷袭了你的营地！",
+                effect: (game) => {
+                    const loss = Math.floor(Math.random() * 800) + 500;
+                    game.state.troops = Math.max(0, game.state.troops - loss);
+                    return `损失${loss}兵力！`;
+                },
+                probability: 0.1
+            },
+            {
+                title: "国库失窃",
+                message: "有盗贼潜入国库，偷走了大量钱财！",
+                effect: (game) => {
+                    const loss = Math.floor(Math.random() * 2000) + 1000;
+                    game.state.gold = Math.max(0, game.state.gold - loss);
+                    return `损失${loss}金！`;
+                },
+                probability: 0.08
+            },
+            {
+                title: "瘟疫流行",
+                message: "领地内爆发瘟疫，军民士气低落！",
+                effect: (game) => {
+                    const troopsLoss = Math.floor(Math.random() * 1000) + 500;
+                    const foodLoss = Math.floor(Math.random() * 2000) + 1000;
+                    game.state.troops = Math.max(0, game.state.troops - troopsLoss);
+                    game.state.food = Math.max(0, game.state.food - foodLoss);
+                    return `损失${troopsLoss}兵力和${foodLoss}粮草！`;
+                },
+                probability: 0.07
+            },
+            {
+                title: "干旱缺水",
+                message: "持续干旱导致农田歉收，水源短缺！",
+                effect: (game) => {
+                    const loss = Math.floor(Math.random() * 4000) + 2000;
+                    game.state.food = Math.max(0, game.state.food - loss);
+                    return `损失${loss}粮草！`;
+                },
+                probability: 0.07
+            },
+            // 中性事件
+            {
+                title: "神秘商人",
+                message: "一位神秘商人来到你的城池，愿意以优惠价格出售商品！",
+                effect: (game) => {
+                    // 随机选择一种商品打折出售
+                    const items = ['troops', 'food', 'freeAnswer', 'doubleReward'];
+                    const item = items[Math.floor(Math.random() * items.length)];
+                    const discount = Math.floor(Math.random() * 30) + 20; // 20-50%折扣
+                    
+                    let cost = 0;
+                    let bonus = 0;
+                    let itemName = '';
+                    
+                    switch(item) {
+                        case 'troops':
+                            cost = Math.floor(3000 * (100 - discount) / 100);
+                            bonus = 1000;
+                            itemName = '兵力补充包';
+                            break;
+                        case 'food':
+                            cost = Math.floor(2000 * (100 - discount) / 100);
+                            bonus = 5000;
+                            itemName = '粮草补充包';
+                            break;
+                        case 'freeAnswer':
+                            cost = Math.floor(2500 * (100 - discount) / 100);
+                            bonus = 1;
+                            itemName = '免答卡';
+                            break;
+                        case 'doubleReward':
+                            cost = Math.floor(4000 * (100 - discount) / 100);
+                            bonus = 1;
+                            itemName = '双倍奖励卡';
+                            break;
+                    }
+                    
+                    const buy = confirm(`神秘商人愿意以${discount}%折扣出售${itemName}，只需${cost}金。是否购买？`);
+                    if (buy && game.state.gold >= cost) {
+                        game.state.gold -= cost;
+                        if (item === 'troops') game.state.troops += bonus;
+                        else if (item === 'food') game.state.food += bonus;
+                        else game.state.items[item] += bonus;
+                        game.updateDisplay();
+                        return `你购买了${itemName}！`;
+                    } else if (buy) {
+                        return `资金不足，无法购买${itemName}。`;
+                    } else {
+                        return `你拒绝了神秘商人的提议。`;
+                    }
+                },
+                probability: 0.05
+            },
+            {
+                title: "天降异象",
+                message: "天空出现奇异天象，百姓议论纷纷！",
+                effect: (game) => {
+                    // 50%几率正面效果，50%负面效果
+                    if (Math.random() > 0.5) {
+                        const bonus = Math.floor(Math.random() * 1000) + 500;
+                        game.state.troops += bonus;
+                        return `士兵们认为这是吉兆，士气大振！获得${bonus}兵力！`;
+                    } else {
+                        const loss = Math.floor(Math.random() * 1000) + 500;
+                        game.state.troops = Math.max(0, game.state.troops - loss);
+                        return `士兵们认为这是凶兆，士气低落！损失${loss}兵力！`;
+                    }
+                },
+                probability: 0.05
+            },
+            // 新增的城池被攻打事件
+            {
+                title: "敌军来犯",
+                message: "敌军正在攻打你的城池！",
+                effect: (game) => {
+                    if (game.state.cities.length === 0) {
+                        return "你没有城池可被攻打！";
+                    }
+                    
+                    // 随机选择一个被攻打的城池
+                    const cityIndex = Math.floor(Math.random() * game.state.cities.length);
+                    const cityName = game.state.cities[cityIndex];
+                    const city = CITIES.find(c => c.name === cityName);
+                    
+                    // 显示确认框，让玩家选择是否回防
+                    const defend = confirm(`敌军正在攻打${cityName}！是否立即回防？\n(取消则自动防守，成功率较低)`);
+                    
+                    if (defend) {
+                        // 玩家选择回防，需要回答问题防守
+                        game.defendCity(city);
+                        return `你已选择回防${cityName}！`;
+                    } else {
+                        // 自动防守，成功率较低
+                        const success = Math.random() < 0.3; // 30%成功率
+                        
+                        if (success) {
+                            return `守军成功击退了进攻${cityName}的敌军！`;
+                        } else {
+                            // 防守失败，失去城池
+                            game.state.cities.splice(cityIndex, 1);
+                            game.initMap();
+                            game.updateDisplay();
+                            return `防守失败，${cityName}被敌军攻占！`;
+                        }
+                    }
+                },
+                probability: 0.8 // 80%概率发生
+            }
+        ];
+
+        // 音乐控制函数
+        function toggleMusic() {
+            const music = document.getElementById('bgMusic');
+            const icon = document.getElementById('musicIcon');
+            
+            if (music.paused) {
+                music.play();
+                icon.textContent = '🔊';
+            } else {
+                music.pause();
+                icon.textContent = '🔇';
+            }
+        }
+
+        class ThreeKingdomsGame {
+            constructor(character) {
+                this.character = character;
+                this.state = {
+                    gold: character === '曹操' ? 6000 : character === '刘备' ? 5000 : 5500,
+                    food: character === '曹操' ? 12000 : character === '刘备' ? 10000 : 11000,
+                    troops: character === '曹操' ? 3500 : character === '刘备' ? 3000 : 3200,
+                    cities: [],
+                    items: {
+                        freeAnswer: 0,
+                        doubleReward: 0
+                    },
+                    alliance: {
+                        active: false,
+                        city: null,
+                        conqueredSinceAlliance: 0
+                    },
+                    reputation: 50 // 初始声望值
+                };
+                this.currentYear = 184; // 初始年份设为184年(黄巾起义)
+                this.yearInterval = null; // 年份计时器
+                this.currentCity = null;
+                this.correctAnswers = 0;
+                this.requiredAnswers = 2; // 默认需要答对2题
+                this.currentQuestion = null;
+                this.stats = {
+                    correct: 0,
+                    wrong: 0,
+                    history: [],
+                    currentStreak: 0,
+                    maxStreak: 0
+                };
+                this.lastEventTime = 0;
+                this.agricultureLevel = 0;
+                this.agricultureInterval = null;
+                this.resourceQuestion = null;
+                this.resourceCorrectAnswers = 0;
+                this.resourceRequiredAnswers = 3;
+                this.isAnswering = false;
+                this.allianceCooldown = false; // 结盟冷却状态
+                this.allianceCooldownTimeout = null; // 结盟冷却计时器
+                this.currentDialogue = null; // 当前对话
+                this.dialogueIndex = 0; // 对话索引
+                
+                this.initMap();
+                this.updateDisplay();
+                this.startYearTimer(); // 启动年份计时器
+                
+                // 自动播放背景音乐
+                document.getElementById('bgMusic').volume = 0.3;
+                document.getElementById('bgMusic').play();
+                document.getElementById('musicIcon').textContent = '🔊';
+                
+                // 设置随机事件检查定时器
+                this.eventCheckInterval = setInterval(() => this.checkForRandomEvent(), 30000); // 每30秒检查一次
+                
+                // 检查是否显示资源获取按钮
+                this.checkResourceButton();
+            }
+
+            // 启动年份计时器
+            startYearTimer() {
+                document.getElementById('yearDisplay').style.display = 'block';
+                this.updateYearDisplay();
+                
+                // 每30秒增加一年
+                this.yearInterval = setInterval(() => {
+                    this.currentYear++;
+                    this.updateYearDisplay();
+                    
+                    // 检查是否有历史事件
+                    if (HISTORICAL_EVENTS[this.currentYear]) {
+                        this.triggerHistoricalEvent(HISTORICAL_EVENTS[this.currentYear]);
+                    }
+                    
+                    // 如果到达280年(三国归晋)，游戏结束
+                    if (this.currentYear >= 280) {
+                        clearInterval(this.yearInterval);
+                        setTimeout(() => {
+                            alert("三国时代结束，晋朝统一天下！");
+                            this.returnToCharacterSelection();
+                        }, 3000);
+                    }
+                }, 30000); // 30秒 = 1年
+            }
+
+            // 更新年份显示
+            updateYearDisplay() {
+                document.getElementById('yearDisplay').textContent = `${this.character} | 年份: ${this.currentYear}年`;
+            }
+
+            // 触发历史事件
+            triggerHistoricalEvent(event) {
+                const result = event.effect(this);
+                
+                document.getElementById('eventTitle').textContent = `${this.currentYear}年 - ${event.title}`;
+                document.getElementById('eventMessage').textContent = `${event.message} ${result}`;
+                document.getElementById('eventModal').style.display = 'flex';
+                
+                this.updateDisplay();
+            }
+
+            // 检查是否触发随机事件
+            checkForRandomEvent() {
+                const now = Date.now();
+                // 至少5分钟才会触发一次事件
+                if (now - this.lastEventTime < 300000) return;
+                
+                // 计算总概率
+                const totalProbability = RANDOM_EVENTS.reduce((sum, event) => sum + event.probability, 0);
+                const roll = Math.random() * totalProbability;
+                
+                let cumulativeProbability = 0;
+                for (const event of RANDOM_EVENTS) {
+                    cumulativeProbability += event.probability;
+                    if (roll <= cumulativeProbability) {
+                        this.triggerEvent(event);
+                        this.lastEventTime = now;
+                        break;
+                    }
+                }
+            }
+
+            // 触发随机事件
+            triggerEvent(event) {
+                const result = event.effect(this);
+                
+                document.getElementById('eventTitle').textContent = event.title;
+                document.getElementById('eventMessage').textContent = `${event.message} ${result}`;
+                document.getElementById('eventModal').style.display = 'flex';
+                
+                this.updateDisplay();
+            }
+
+            // 关闭事件窗口
+            closeEvent() {
+                document.getElementById('eventModal').style.display = 'none';
+            }
+
+            // 显示城池历史
+            showCityHistory(cityName) {
+                document.getElementById('cityHistoryTitle').textContent = `${cityName}历史`;
+                document.getElementById('cityHistoryMessage').textContent = CITY_HISTORIES[cityName];
+                document.getElementById('cityHistoryModal').style.display = 'flex';
+            }
+
+            // 关闭城池历史
+            closeCityHistory() {
+                document.getElementById('cityHistoryModal').style.display = 'none';
+                this.resetAttack(); // 关闭历史窗口后重置攻击状态
+            }
+
+            // 显示胜利动画
+            showVictoryAnimation() {
+                const victoryContent = document.getElementById('victoryContent');
+                victoryContent.innerHTML = `
+                    <h2 style="color: #8B0000; text-align: center; margin-bottom: 20px;">${this.character}统一天下</h2>
+                    <p style="font-size: 1.2rem; line-height: 1.6; white-space: pre-line;">${CHARACTER_HISTORIES[this.character]}</p>
+                `;
+                
+                document.getElementById('victoryAnimation').style.display = 'flex';
+                
+                // 添加动画效果
+                setTimeout(() => {
+                    victoryContent.style.opacity = '1';
+                    victoryContent.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // 5秒后返回角色选择
+                setTimeout(() => {
+                    this.returnToCharacterSelection();
+                }, 10000);
+            }
+
+            // 检查是否显示资源获取按钮
+            checkResourceButton() {
+                const btn = document.getElementById('earnResourceBtn');
+                // 当资金和粮草都低于1000时显示按钮
+                if (this.state.gold < 1000 && this.state.food < 1000) {
+                    btn.style.display = 'block';
+                } else {
+                    btn.style.display = 'none';
+                }
+            }
+
+            // 打乱问题选项顺序
+            shuffleQuestion(question) {
+                const options = [...question.o];
+                const correctAnswer = options[question.a];
+                
+                // 随机打乱选项
+                for (let i = options.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [options[i], options[j]] = [options[j], options[i]];
+                }
+                
+                return {
+                    q: question.q,
+                    o: options,
+                    a: options.indexOf(correctAnswer),
+                    hint: question.hint
+                };
+            }
+
+            initMap() {
+                const map = document.getElementById('map');
+                map.innerHTML = '';
+                CITIES.forEach(city => {
+                    const node = document.createElement('div');
+                    node.className = 'city-node';
+                    node.style.left = `${city.x}%`;
+                    node.style.top = `${city.y}%`;
+                    node.textContent = city.name;
+                    node.title = `${city.name} (${city.defender}驻守, 兵力: ${city.troops})`;
+                    node.onclick = () => this.attackCity(city);
+                    if (this.state.cities.includes(city.name)) {
+                        node.classList.add('city-node-owned');
+                    }
+                    map.appendChild(node);
+                });
+            }
+
+            attackCity(city) {
+                if (this.isAnswering) return; // 防止重复点击
+                
+                if (this.state.cities.includes(city.name)) {
+                    alert('该地盘已占领');
+                    return;
+                }
+                if (this.state.troops <= 0) {
+                    alert('兵力不足！');
+                    return;
+                }
+                if (this.state.food < 5000) {
+                    alert('粮草不足！每次攻城需要5000粮草');
+                    return;
+                }
+                
+                this.isAnswering = true; // 标记为正在答题状态
+                
+                // 根据敌方兵力调整需要答对的题目数量
+                if (city.troops > this.state.troops) {
+                    this.requiredAnswers = 3;
+                    alert(`警告！${city.defender}驻守的${city.name}兵力(${city.troops})超过你的兵力(${this.state.troops})，需要答对3题才能攻下！`);
+                } else {
+                    this.requiredAnswers = 2;
+                }
+                
+                // 消耗粮草
+                this.state.food -= 5000;
+                this.updateDisplay();
+                
+                this.currentCity = city;
+                this.correctAnswers = 0;
+                document.getElementById('progressBox').style.display = 'block';
+                document.getElementById('correctAnswers').textContent = this.correctAnswers;
+                document.getElementById('requiredAnswers').textContent = this.requiredAnswers;
+                document.getElementById('hintBox').style.display = 'none';
+                
+                // 显示守将对话
+                this.showGeneralDialogue(city.defender);
+            }
+
+            // 显示武将对话
+            showGeneralDialogue(generalName) {
+                if (!GENERAL_DIALOGUES[generalName]) {
+                    this.showQuestion();
+                    return;
+                }
+                
+                this.currentDialogue = GENERAL_DIALOGUES[generalName];
+                this.dialogueIndex = 0;
+                
+                document.getElementById('dialogueTitle').textContent = `与${generalName}对话`;
+                document.getElementById('dialogueSpeaker').textContent = generalName;
+                document.getElementById('dialogueMessage').textContent = this.currentDialogue[0].message;
+                document.getElementById('dialogueNextBtn').textContent = '继续';
+                
+                // 设置武将头像
+                const portrait = document.getElementById('dialoguePortrait');
+                portrait.style.backgroundImage = `url('https://source.unsplash.com/random/80x80/?portrait,${generalName}')`;
+                
+                document.getElementById('dialogueModal').style.display = 'flex';
+            }
+
+            // 继续对话
+            nextDialogue() {
+                this.dialogueIndex++;
+                
+                if (this.dialogueIndex < this.currentDialogue.length) {
+                    // 显示下一条对话
+                    document.getElementById('dialogueMessage').textContent = 
+                        this.currentDialogue[this.dialogueIndex].message;
+                } else {
+                    // 对话结束，显示问题
+                    document.getElementById('dialogueModal').style.display = 'none';
+                    this.showQuestion();
+                }
+            }
+
+            showQuestion() {
+                const originalQuestion = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+                const question = this.shuffleQuestion(originalQuestion);
+                
+                this.currentQuestion = question;
+                const box = document.getElementById('questionBox');
+                box.innerHTML = `
+                    <h3>攻打 ${this.currentCity.defender} 驻守的 ${this.currentCity.name} (消耗5000粮草)</h3>
+                    <p>${question.q}</p>
+                    ${question.o.map((opt, i) => `
+                        <button class="action-button" onclick="game.answer(${i}, ${question.a})">${opt}</button>
+                    `).join('')}
+                    ${this.state.items.freeAnswer > 0 ? 
+                        `<button class="action-button" onclick="game.useFreeAnswer()" style="background-color: #4CAF50;">使用免答卡 (剩余${this.state.items.freeAnswer})</button>` : ''}
+                `;
+            }
+
+            // 新增的防御城池方法
+            defendCity(city) {
+                this.isAnswering = true;
+                this.currentCity = city;
+                this.correctAnswers = 0;
+                this.requiredAnswers = 2; // 需要答对2题防守成功
+                
+                document.getElementById('questionBox').innerHTML = `
+                    <h3>防守 ${city.name} (需要答对${this.requiredAnswers}题)</h3>
+                    <p>敌军正在攻打${city.name}，请回答问题防守城池！</p>
+                `;
+                
+                document.getElementById('progressBox').style.display = 'block';
+                document.getElementById('correctAnswers').textContent = this.correctAnswers;
+                document.getElementById('requiredAnswers').textContent = this.requiredAnswers;
+                document.getElementById('hintBox').style.display = 'none';
+                
+                this.showDefenseQuestion();
+            }
+
+            // 新增的显示防御问题方法
+            showDefenseQuestion() {
+                const originalQuestion = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+                const question = this.shuffleQuestion(originalQuestion);
+                
+                this.currentQuestion = question;
+                const box = document.getElementById('questionBox');
+                box.innerHTML += `
+                    <p>${question.q}</p>
+                    ${question.o.map((opt, i) => `
+                        <button class="action-button" onclick="game.answerDefense(${i}, ${question.a})">${opt}</button>
+                    `).join('')}
+                    ${this.state.items.freeAnswer > 0 ? 
+                        `<button class="action-button" onclick="game.useFreeAnswerDefense()" style="background-color: #4CAF50;">使用免答卡 (剩余${this.state.items.freeAnswer})</button>` : ''}
+                `;
+            }
+
+            showHint() {
+                if (!this.currentQuestion) {
+                    alert('请在攻城时使用提示！');
+                    return;
+                }
+                
+                document.getElementById('hintBox').style.display = 'block';
+                document.getElementById('hintText').textContent = this.currentQuestion.hint;
+            }
+
+            answer(selected, correct) {
+                if (!this.isAnswering) return; // 防止在非答题状态下回答问题
+                
+                const isCorrect = selected === correct;
+                const selectedAnswer = this.currentQuestion.o[selected];
+                const correctAnswer = this.currentQuestion.o[correct];
+                
+                // 记录答题历史
+                this.stats.history.push({
+                    question: this.currentQuestion.q,
+                    selected: selectedAnswer,
+                    correct: correctAnswer,
+                    isCorrect: isCorrect
+                });
+                
+                if (isCorrect) {
+                    this.correctAnswers++;
+                    this.stats.correct++;
+                    this.stats.currentStreak++;
+                    if (this.stats.currentStreak > this.stats.maxStreak) {
+                        this.stats.maxStreak = this.stats.currentStreak;
+                    }
+                    document.getElementById('correctAnswers').textContent = this.correctAnswers;
+                    document.getElementById('correctCount').textContent = this.stats.correct;
+                    
+                    if (this.correctAnswers >= this.requiredAnswers) {
+                        let goldReward = 1000;
+                        let troopsReward = 300;
+                        
+                        // 检查是否使用双倍奖励卡
+                        if (this.state.items.doubleReward > 0) {
+                            goldReward *= 2;
+                            troopsReward *= 2;
+                            this.state.items.doubleReward--;
+                            alert('双倍奖励卡生效！获得双倍奖励');
+                        }
+                        
+                        this.state.gold += goldReward;
+                        this.state.troops += troopsReward;
+                        this.state.cities.push(this.currentCity.name);
+                        
+                        // 检查是否有结盟，并更新攻占城池计数
+                        if (this.state.alliance.active) {
+                            this.state.alliance.conqueredSinceAlliance++;
+                            // 每攻占2座城池，获得结盟奖励
+                            if (this.state.alliance.conqueredSinceAlliance >= 2) {
+                                const allianceBonusGold = 1500;
+                                const allianceBonusTroops = 800;
+                                this.state.gold += allianceBonusGold;
+                                this.state.troops += allianceBonusTroops;
+                                this.state.alliance.conqueredSinceAlliance = 0;
+                                alert(`结盟奖励！获得${allianceBonusGold}金和${allianceBonusTroops}兵力`);
+                            }
+                        }
+                        
+                        // 显示处置守将选择
+                        this.showExecutionOptions(this.currentCity.defender);
+                    } else {
+                        this.showQuestion();
+                    }
+                } else {
+                    this.state.troops -= 500;
+                    this.stats.wrong++;
+                    this.stats.currentStreak = 0;
+                    document.getElementById('wrongCount').textContent = this.stats.wrong;
+                    alert(`回答错误！正确答案是: ${correctAnswer}\n损失500兵力`);
+                    this.resetAttack();
+                }
+                this.updateDisplay();
+                this.initMap();
+                this.checkResourceButton();
+            }
+
+            // 显示处置守将选项
+            showExecutionOptions(generalName) {
+                document.getElementById('executionTitle').textContent = `处置${generalName}`;
+                document.getElementById('executionMessage').textContent = `你已攻下${this.currentCity.name}，如何处置守将${generalName}？`;
+                
+                const optionsDiv = document.getElementById('executionOptions');
+                optionsDiv.innerHTML = '';
+                
+                // 根据角色不同显示不同选项，但都包含"斩首示众"选项
+                if (this.character === '曹操') {
+                    // 曹操选项：斩首、收编、释放
+                    optionsDiv.innerHTML = `
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '斩首')">斩首示众（威慑+10，声望-5）</button>
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '收编')">收编麾下（兵力+800，声望+5）</button>
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '释放')">释放（声望+10）</button>
+                    `;
+                } else if (this.character === '刘备') {
+                    // 刘备选项：斩首、劝降、释放
+                    optionsDiv.innerHTML = `
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '斩首')">斩首示众（威慑+10，声望-5）</button>
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '劝降')">好言劝降（声望+10，50%几率兵力+500）</button>
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '释放')">释放（声望+15）</button>
+                    `;
+                } else {
+                    // 孙权选项：斩首、收编、流放
+                    optionsDiv.innerHTML = `
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '斩首')">斩首示众（威慑+10，声望-5）</button>
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '收编')">收编麾下（兵力+700，声望+5）</button>
+                        <button class="execution-option" onclick="game.executeGeneral('${generalName}', '流放')">流放边疆（威慑+5，声望-3）</button>
+                    `;
+                }
+                
+                document.getElementById('executionModal').style.display = 'flex';
+            }
+
+            // 处置守将
+            executeGeneral(generalName, option) {
+                let message = '';
+                
+                switch(option) {
+                    case '斩首':
+                        this.state.reputation = Math.max(0, this.state.reputation - 5);
+                        message = `你下令将${generalName}斩首示众，威慑力增加但声望下降！`;
+                        break;
+                    case '收编':
+                        if (this.character === '曹操') {
+                            this.state.troops += 800;
+                            this.state.reputation += 5;
+                            message = `${generalName}被你的威名所慑，率部归顺！兵力增加800，声望提升。`;
+                        } else {
+                            this.state.troops += 700;
+                            this.state.reputation += 5;
+                            message = `${generalName}钦佩你的才能，愿意效力！兵力增加700，声望提升。`;
+                        }
+                        break;
+                    case '释放':
+                        if (this.character === '刘备') {
+                            this.state.reputation += 15;
+                            message = `你释放了${generalName}，天下人称赞你的仁义！声望大幅提升。`;
+                        } else {
+                            this.state.reputation += 10;
+                            message = `你释放了${generalName}，获得了宽厚待人的名声！声望提升。`;
+                        }
+                        break;
+                    case '劝降':
+                        if (Math.random() < 0.5) {
+                            this.state.troops += 500;
+                            this.state.reputation += 10;
+                            message = `${generalName}被你的诚意感动，愿意归顺！兵力增加500，声望提升。`;
+                        } else {
+                            this.state.reputation += 5;
+                            message = `${generalName}拒绝投降，但感激你的不杀之恩！声望略微提升。`;
+                        }
+                        break;
+                    case '流放':
+                        this.state.reputation = Math.max(0, this.state.reputation - 3);
+                        message = `你将${generalName}流放边疆，威慑力增加但声望略有下降。`;
+                        break;
+                }
+                
+                // 确保声望在0-100范围内
+                this.state.reputation = Math.min(100, Math.max(0, this.state.reputation));
+                
+                alert(message);
+                document.getElementById('executionModal').style.display = 'none';
+                
+                // 显示城池历史
+                this.showCityHistory(this.currentCity.name);
+                
+                // 检查是否已经占领所有城池
+                if (this.state.cities.length === CITIES.length) {
+                    setTimeout(() => {
+                        this.showVictoryAnimation();
+                        clearInterval(this.eventCheckInterval); // 游戏结束停止检查事件
+                        if (this.agricultureInterval) {
+                            clearInterval(this.agricultureInterval);
+                        }
+                    }, 500);
+                }
+                
+                this.updateDisplay();
+            }
+
+            // 新增的防御答题方法
+            answerDefense(selected, correct) {
+                const isCorrect = selected === correct;
+                const selectedAnswer = this.currentQuestion.o[selected];
+                const correctAnswer = this.currentQuestion.o[correct];
+                
+                // 记录答题历史
+                this.stats.history.push({
+                    question: this.currentQuestion.q,
+                    selected: selectedAnswer,
+                    correct: correctAnswer,
+                    isCorrect: isCorrect
+                });
+                
+                if (isCorrect) {
+                    this.correctAnswers++;
+                    this.stats.correct++;
+                    this.stats.currentStreak++;
+                    if (this.stats.currentStreak > this.stats.maxStreak) {
+                        this.stats.maxStreak = this.stats.currentStreak;
+                    }
+                    document.getElementById('correctAnswers').textContent = this.correctAnswers;
+                    document.getElementById('correctCount').textContent = this.stats.correct;
+                    
+                    if (this.correctAnswers >= this.requiredAnswers) {
+                        // 防守成功
+                        alert(`防守成功！${this.currentCity.name}仍在你掌控中`);
+                        this.resetAttack();
+                    } else {
+                        this.showDefenseQuestion();
+                    }
+                } else {
+                    // 防守失败
+                    const cityIndex = this.state.cities.indexOf(this.currentCity.name);
+                    if (cityIndex !== -1) {
+                        this.state.cities.splice(cityIndex, 1);
+                    }
+                    this.state.troops -= 500;
+                    this.stats.wrong++;
+                    this.stats.currentStreak = 0;
+                    document.getElementById('wrongCount').textContent = this.stats.wrong;
+                    alert(`回答错误！正确答案是: ${correctAnswer}\n防守失败，${this.currentCity.name}被敌军攻占！`);
+                    this.resetAttack();
+                }
+                this.updateDisplay();
+                this.initMap();
+            }
+
+            useFreeAnswer() {
+                if (!this.isAnswering || this.state.items.freeAnswer <= 0) return;
+                
+                this.state.items.freeAnswer--;
+                this.correctAnswers++;
+                document.getElementById('correctAnswers').textContent = this.correctAnswers;
+                alert('使用免答卡成功！自动答对一题');
+                
+                if (this.correctAnswers >= this.requiredAnswers) {
+                    this.state.gold += 1000;
+                    this.state.troops += 300;
+                    this.state.cities.push(this.currentCity.name);
+                    
+                    // 检查是否有结盟，并更新攻占城池计数
+                    if (this.state.alliance.active) {
+                        this.state.alliance.conqueredSinceAlliance++;
+                        // 每攻占2座城池，获得结盟奖励
+                        if (this.state.alliance.conqueredSinceAlliance >= 2) {
+                            const allianceBonusGold = 1500;
+                            const allianceBonusTroops = 800;
+                            this.state.gold += allianceBonusGold;
+                            this.state.troops += allianceBonusTroops;
+                            this.state.alliance.conqueredSinceAlliance = 0;
+                            alert(`结盟奖励！获得${allianceBonusGold}金和${allianceBonusTroops}兵力`);
+                        }
+                    }
+                    
+                    // 显示处置守将选择
+                    this.showExecutionOptions(this.currentCity.defender);
+                } else {
+                    this.showQuestion();
+                }
+                
+                this.updateDisplay();
+                this.initMap();
+                this.checkResourceButton();
+            }
+
+            // 新增的防御中使用免答卡方法
+            useFreeAnswerDefense() {
+                if (this.state.items.freeAnswer <= 0) return;
+                
+                this.state.items.freeAnswer--;
+                this.correctAnswers++;
+                document.getElementById('correctAnswers').textContent = this.correctAnswers;
+                alert('使用免答卡成功！自动答对一题');
+                
+                if (this.correctAnswers >= this.requiredAnswers) {
+                    // 防守成功
+                    alert(`防守成功！${this.currentCity.name}仍在你掌控中`);
+                    this.resetAttack();
+                } else {
+                    this.showDefenseQuestion();
+                }
+                
+                this.updateDisplay();
+                this.initMap();
+            }
+
+            resetAttack() {
+                this.isAnswering = false; // 重置答题状态
+                this.currentCity = null;
+                this.currentQuestion = null;
+                this.correctAnswers = 0;
+                this.requiredAnswers = 2;
+                document.getElementById('questionBox').innerHTML = '<p>点击地图上的城池开始攻城！</p>';
+                document.getElementById('progressBox').style.display = 'none';
+                document.getElementById('hintBox').style.display = 'none';
+            }
+
+            militaryReform() {
+                if (this.state.gold >= 2000) {
+                    this.state.gold -= 2000;
+                    this.state.troops = Math.floor(this.state.troops * 1.2);
+                    this.updateDisplay();
+                    alert('军事改革成功！兵力增加20%');
+                    this.checkResourceButton();
+                } else {
+                    alert('资金不足！');
+                }
+            }
+
+            agriculturalDevelopment() {
+                if (this.state.gold >= 1500) {
+                    this.state.gold -= 1500;
+                    this.agricultureLevel++;
+                    
+                    // 修改农业发展效果：每0.5秒加10粮草，每农业发展一次就在原本增加10粮草的基础上加10粮草
+                    const bonusPerHalfSecond = 10 + this.agricultureLevel * 10;
+                    
+                    // 如果已经有定时器，先清除
+                    if (this.agricultureInterval) {
+                        clearInterval(this.agricultureInterval);
+                    }
+                    
+                    // 设置新的定时器，每0.5秒增加粮草
+                    this.agricultureInterval = setInterval(() => {
+                        this.state.food += bonusPerHalfSecond;
+                        this.updateDisplay();
+                    }, 500); // 0.5秒
+                    
+                    document.getElementById('agriLevel').textContent = this.agricultureLevel;
+                    this.updateDisplay();
+                    alert(`农业发展成功！现在每0.5秒获得${bonusPerHalfSecond}粮草`);
+                    this.checkResourceButton();
+                } else {
+                    alert('资金不足！');
+                }
+            }
+
+            openShop() {
+                document.getElementById('shopModal').style.display = 'flex';
+            }
+
+            closeShop() {
+                document.getElementById('shopModal').style.display = 'none';
+            }
+
+            buyItem(type) {
+                let cost = 0;
+                let success = false;
+                
+                switch(type) {
+                    case 'troops':
+                        cost = 3000;
+                        if (this.state.gold >= cost) {
+                            this.state.gold -= cost;
+                            this.state.troops += 1000;
+                            success = true;
+                            alert('购买成功！兵力增加1000');
+                        }
+                        break;
+                    case 'food':
+                        cost = 2000;
+                        if (this.state.gold >= cost) {
+                            this.state.gold -= cost;
+                            this.state.food += 5000;
+                            success = true;
+                            alert('购买成功！粮草增加5000');
+                        }
+                        break;
+                    case 'freeAnswer':
+                        cost = 2500;
+                        if (this.state.gold >= cost) {
+                            this.state.gold -= cost;
+                            this.state.items.freeAnswer++;
+                            success = true;
+                            alert('购买成功！获得1张免答卡');
+                        }
+                        break;
+                    case 'doubleReward':
+                        cost = 4000;
+                        if (this.state.gold >= cost) {
+                            this.state.gold -= cost;
+                            this.state.items.doubleReward++;
+                            success = true;
+                            alert('购买成功！获得1张双倍奖励卡');
+                        }
+                        break;
+                }
+                
+                if (success) {
+                    this.updateDisplay();
+                    this.checkResourceButton();
+                } else {
+                    alert('资金不足！');
+                }
+            }
+
+            showStats() {
+                const tableBody = document.getElementById('statsTableBody');
+                tableBody.innerHTML = '';
+                
+                this.stats.history.forEach((record, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.question}</td>
+                        <td>${record.selected}</td>
+                        <td>${record.correct}</td>
+                        <td style="color: ${record.isCorrect ? 'green' : 'red'}">${record.isCorrect ? '✅' : '❌'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                const total = this.stats.correct + this.stats.wrong;
+                const accuracy = total > 0 ? Math.round((this.stats.correct / total) * 100) : 0;
+                
+                document.getElementById('totalQuestions').textContent = total;
+                document.getElementById('accuracyRate').textContent = accuracy;
+                document.getElementById('maxStreak').textContent = this.stats.maxStreak;
+                
+                document.getElementById('statsModal').style.display = 'flex';
+            }
+
+            closeStats() {
+                document.getElementById('statsModal').style.display = 'none';
+            }
+
+            // 答题获取资源
+            earnResourcesByAnswering() {
+                // 显示资源获取模态框
+                document.getElementById('resourceModal').style.display = 'flex';
+                this.resourceCorrectAnswers = 0;
+                this.resourceRequiredAnswers = 3;
+                document.getElementById('resourceProgressBox').style.display = 'block';
+                document.getElementById('resourceCorrectAnswers').textContent = this.resourceCorrectAnswers;
+                document.getElementById('resourceRequiredAnswers').textContent = this.resourceRequiredAnswers;
+                
+                this.showResourceQuestion();
+            }
+
+            // 显示资源获取问题
+            showResourceQuestion() {
+                const originalQuestion = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+                const question = this.shuffleQuestion(originalQuestion);
+                
+                this.resourceQuestion = question;
+                const box = document.getElementById('resourceQuestionBox');
+                box.innerHTML = `
+                    <h3>答题获取资源 (答对${this.resourceRequiredAnswers}题可获得奖励)</h3>
+                    <p>${question.q}</p>
+                    ${question.o.map((opt, i) => `
+                        <button class="action-button" onclick="game.answerResourceQuestion(${i}, ${question.a})">${opt}</button>
+                    `).join('')}
+                `;
+            }
+
+            // 回答资源获取问题
+            answerResourceQuestion(selected, correct) {
+                const isCorrect = selected === correct;
+                const selectedAnswer = this.resourceQuestion.o[selected];
+                const correctAnswer = this.resourceQuestion.o[correct];
+                
+                if (isCorrect) {
+                    this.resourceCorrectAnswers++;
+                    document.getElementById('resourceCorrectAnswers').textContent = this.resourceCorrectAnswers;
+                    
+                    if (this.resourceCorrectAnswers >= this.resourceRequiredAnswers) {
+                        // 奖励资源
+                        const goldReward = 2000;
+                        const foodReward = 3000;
+                        this.state.gold += goldReward;
+                        this.state.food += foodReward;
+                        
+                        alert(`答题成功！获得${goldReward}金和${foodReward}粮草`);
+                        this.closeResourceModal();
+                        this.updateDisplay();
+                        this.checkResourceButton();
+                    } else {
+                        this.showResourceQuestion();
+                    }
+                } else {
+                    alert(`回答错误！正确答案是: ${correctAnswer}`);
+                    this.closeResourceModal();
+                }
+            }
+
+            // 关闭资源获取模态框
+            closeResourceModal() {
+                document.getElementById('resourceModal').style.display = 'none';
+                this.resourceQuestion = null;
+            }
+
+            // 开始结盟流程
+            startAlliance() {
+                if (this.allianceCooldown) {
+                    alert('结盟失败后需要等待15秒才能再次尝试结盟！');
+                    return;
+                }
+                
+                if (this.state.alliance.active) {
+                    alert(`你已经与${this.state.alliance.city}结盟！`);
+                    return;
+                }
+                
+                // 获取未被占领的城池列表
+                const unoccupiedCities = CITIES.filter(city => !this.state.cities.includes(city.name));
+                
+                if (unoccupiedCities.length === 0) {
+                    alert('没有可结盟的城池了！');
+                    return;
+                }
+                
+                // 显示结盟模态框
+                document.getElementById('allianceModal').style.display = 'flex';
+                
+                // 填充城池列表
+                const cityList = document.getElementById('allianceCityList');
+                cityList.innerHTML = '';
+                
+                unoccupiedCities.forEach(city => {
+                    const cityOption = document.createElement('div');
+                    cityOption.className = 'city-option';
+                    cityOption.innerHTML = `
+                        <input type="radio" name="allianceCity" id="city_${city.name}" value="${city.name}">
+                        <label for="city_${city.name}">${city.name} (${city.defender}驻守)</label>
+                    `;
+                    cityList.appendChild(cityOption);
+                });
+                
+                // 设置第一个选项为默认选中
+                if (unoccupiedCities.length > 0) {
+                    document.getElementById(`city_${unoccupiedCities[0].name}`).checked = true;
+                }
+                
+                // 设置确认按钮点击事件
+                document.getElementById('confirmAllianceBtn').onclick = () => this.confirmAlliance();
+            }
+
+            // 确认结盟
+            confirmAlliance() {
+                const selectedCity = document.querySelector('input[name="allianceCity"]:checked');
+                
+                if (!selectedCity) {
+                    alert('请选择一个城池进行结盟！');
+                    return;
+                }
+                
+                const cityName = selectedCity.value;
+                
+                // 50%几率成功
+                const success = Math.random() < 0.5;
+                
+                if (success) {
+                    // 结盟成功
+                    this.state.alliance = {
+                        active: true,
+                        city: cityName,
+                        conqueredSinceAlliance: 0
+                    };
+                    
+                    // 显示结盟状态和背叛按钮，隐藏结盟按钮
+                    document.getElementById('allianceStatus').style.display = 'block';
+                    document.getElementById('alliedCity').textContent = cityName;
+                    document.getElementById('betrayBtn').style.display = 'block';
+                    document.getElementById('allianceBtn').style.display = 'none';
+                    
+                    // 获得初始结盟奖励
+                    const initialGoldBonus = 1000;
+                    const initialTroopsBonus = 500;
+                    this.state.gold += initialGoldBonus;
+                    this.state.troops += initialTroopsBonus;
+                    
+                    alert(`与${cityName}结盟成功！获得初始奖励${initialGoldBonus}金和${initialTroopsBonus}兵力。每攻占2座城池可获得额外奖励。`);
+                } else {
+                    // 结盟失败
+                    this.state.food = Math.max(0, this.state.food - 100);
+                    alert(`与${cityName}结盟失败！损失100粮草。15秒后才能再次尝试结盟。`);
+                    
+                    // 设置15秒冷却时间
+                    this.allianceCooldown = true;
+                    const allianceBtn = document.getElementById('allianceBtn');
+                    allianceBtn.classList.add('disabled');
+                    
+                    // 设置冷却计时器
+                    this.allianceCooldownTimeout = setTimeout(() => {
+                        this.allianceCooldown = false;
+                        allianceBtn.classList.remove('disabled');
+                    }, 15000);
+                }
+                
+                this.closeAllianceModal();
+                this.updateDisplay();
+            }
+
+            // 背叛结盟方法
+            betrayAlliance() {
+                if (!this.state.alliance.active) {
+                    alert('当前没有结盟关系！');
+                    return;
+                }
+                
+                const confirmBetray = confirm(`确定要背叛与${this.state.alliance.city}的结盟吗？背叛后15秒内无法再次结盟！`);
+                if (confirmBetray) {
+                    const cityName = this.state.alliance.city;
+                    
+                    // 背叛惩罚：损失部分资源
+                    const goldLoss = Math.floor(this.state.gold * 0.1); // 损失10%资金
+                    const foodLoss = Math.floor(this.state.food * 0.1); // 损失10%粮草
+                    this.state.gold = Math.max(0, this.state.gold - goldLoss);
+                    this.state.food = Math.max(0, this.state.food - foodLoss);
+                    
+                    // 重置结盟状态
+                    this.state.alliance = {
+                        active: false,
+                        city: null,
+                        conqueredSinceAlliance: 0
+                    };
+                    
+                    // 隐藏结盟状态和背叛按钮，显示结盟按钮
+                    document.getElementById('allianceStatus').style.display = 'none';
+                    document.getElementById('betrayBtn').style.display = 'none';
+                    document.getElementById('allianceBtn').style.display = 'block';
+                    
+                    // 设置15秒冷却时间
+                    this.allianceCooldown = true;
+                    const allianceBtn = document.getElementById('allianceBtn');
+                    allianceBtn.classList.add('disabled');
+                    
+                    // 设置冷却计时器
+                    this.allianceCooldownTimeout = setTimeout(() => {
+                        this.allianceCooldown = false;
+                        allianceBtn.classList.remove('disabled');
+                    }, 15000);
+                    
+                    alert(`你背叛了与${cityName}的结盟！损失了${goldLoss}金和${foodLoss}粮草。15秒后才能再次结盟。`);
+                    this.updateDisplay();
+                }
+            }
+
+            // 关闭结盟模态框
+            closeAllianceModal() {
+                document.getElementById('allianceModal').style.display = 'none';
+            }
+
+            returnToCharacterSelection() {
+                // 清除年份计时器
+                clearInterval(this.yearInterval);
+                document.getElementById('yearDisplay').style.display = 'none';
+                
+                // 清除结盟冷却计时器
+                if (this.allianceCooldownTimeout) {
+                    clearTimeout(this.allianceCooldownTimeout);
+                }
+                
+                // 标记当前角色为已选
+                selectedCharacters.add(this.character);
+                
+                // 隐藏游戏界面和胜利动画
+                document.getElementById('gameContainer').style.display = 'none';
+                document.getElementById('victoryAnimation').style.display = 'none';
+                
+                // 显示角色选择界面
+                document.getElementById('characterSelection').style.display = 'flex';
+                
+                // 更新角色选择提示
+                const prompt = document.getElementById('selectionPrompt');
+                prompt.textContent = selectedCharacters.size === 3 ? 
+                    '所有角色都已选择过！游戏将重新开始' : 
+                    '请选择一位主公开始游戏';
+                
+                // 禁用已选角色
+                document.querySelectorAll('.character-card').forEach(card => {
+                    const character = card.id.replace('Card', '');
+                    if (selectedCharacters.has(character)) {
+                        card.classList.add('disabled');
+                        card.onclick = null;
+                    }
+                });
+                
+                // 停止事件检查和农业发展定时器
+                clearInterval(this.eventCheckInterval);
+                if (this.agricultureInterval) {
+                    clearInterval(this.agricultureInterval);
+                }
+                
+                // 重置背叛按钮状态
+                document.getElementById('betrayBtn').style.display = 'none';
+                document.getElementById('allianceBtn').style.display = 'block';
+                
+                // 如果所有角色都已选择过，清空记录
+                if (selectedCharacters.size === 3) {
+                    setTimeout(() => {
+                        selectedCharacters.clear();
+                        document.querySelectorAll('.character-card').forEach(card => {
+                            card.classList.remove('disabled');
+                            const character = card.id.replace('Card', '');
+                            card.onclick = () => selectCharacter(character);
+                        });
+                        prompt.textContent = '请选择一位主公开始游戏';
+                    }, 3000);
+                }
+            }
+
+            updateDisplay() {
+                document.getElementById('gold').textContent = this.state.gold;
+                document.getElementById('food').textContent = this.state.food;
+                document.getElementById('troops').textContent = this.state.troops;
+                document.getElementById('citiesCount').textContent = this.state.cities.length;
+                document.getElementById('correctCount').textContent = this.stats.correct;
+                document.getElementById('wrongCount').textContent = this.stats.wrong;
+                document.getElementById('agriLevel').textContent = this.agricultureLevel;
+                document.getElementById('reputationValue').textContent = this.state.reputation;
+            }
+        }
+
+        // 全局游戏实例
+        let game;
+
+        function startGame() {
+            document.getElementById('coverScreen').style.display = 'none';
+            document.getElementById('characterSelection').style.display = 'flex';
+        }
+
+        function selectCharacter(character) {
+            if (selectedCharacters.has(character)) {
+                alert('该角色已被选择，请选择其他主公！');
+                return;
+            }
+            
+            document.getElementById('characterSelection').style.display = 'none';
+            game = new ThreeKingdomsGame(character);
+            document.getElementById('gameContainer').style.display = 'grid';
+        }
+
+        function returnToCharacterSelection() {
+            if (confirm('确定要返回角色选择界面吗？当前游戏进度将丢失。')) {
+                if (game) {
+                    game.returnToCharacterSelection();
+                } else {
+                    document.getElementById('gameContainer').style.display = 'none';
+                    document.getElementById('characterSelection').style.display = 'flex';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
